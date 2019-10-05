@@ -4,7 +4,7 @@
 <body>
 <h1>Keith's Proxy Service</h1>
 <ul>
-  <li><em>Store data: </em><code>curl http://localhost:3000/store/my-key\?some\=value\&some-other\=other-value</code></li>
+  <li><em>Store data: </em><code>curl -X POST http://localhost:3000/my-key -H 'Content-Type: application/json' -d '{"foo": "bar"}'</code></li>
   <li><em>Retrieve data: </em><code>curl http://localhost:3000/my-key</code></li>
 </ul>
 </body>

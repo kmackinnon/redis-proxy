@@ -22,9 +22,11 @@ const path = require("path");
 
 // configure express to use body-parser as middleware
 app.use(bodyParser.urlencoded({ extended: false }));
+
+// parse application/json
 app.use(bodyParser.json());
 
-// curl http://localhost:3000/my-key
+// curl http://localhost:3000/keith
 app.get('/:key', async (req, res) => {
   const { key } = req.params;
   console.log(key);
@@ -48,12 +50,17 @@ app.get('/:key', async (req, res) => {
   return res.json(JSON.parse(redisVal));
 });
 
-// TODO use POST
-// curl http://localhost:3000/store/my-key\?some\=value\&some-other\=other-value
-app.get('/store/:key', async (req, res) => {
-  const { key } = req.params;
-  const value = req.query;
-  await redisClient.setAsync(key, JSON.stringify(value));
+// curl -X POST http://localhost:3000/keith -H 'Content-Type: application/json' -d '{"location": "Vancouver"}'
+app.post("/:key", async (req, res) => {
+  const key = req.params['key'];
+  const value = JSON.stringify(req.body);
+
+  if (typeof value === 'undefined') {
+    res.sendStatus(HttpStatus.BAD_REQUEST);
+    return;
+  }
+
+  await redisClient.setAsync(key, value);
   return res.send('Success');
 });
 
