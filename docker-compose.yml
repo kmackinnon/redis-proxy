@@ -1,0 +1,24 @@
+version: '3'
+services:
+  redis:
+    image: redis
+    container_name: cache
+    expose:
+      - 6379
+
+  proxy:
+    build: ./
+    volumes:
+      - ./:/var/www/app
+    ports:
+      - ${PORT}:${PORT}
+    links:
+      - redis
+    environment:
+      - NODE_ENV=development
+      - REDIS_URL=${REDIS_URL}
+      - PORT=${PORT}
+      - CACHE_EXPIRY=${CACHE_EXPIRY}
+      - CACHE_CAPACITY=${CACHE_CAPACITY}
+    command:
+      sh -c 'npm i && node server.js'
