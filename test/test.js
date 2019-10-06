@@ -1,34 +1,67 @@
 'use strict';
 
-console.log('Test is running');
-
-/*
-const app = require('../server');
 const chai = require('chai');
-const request = require('supertest');
+const chaiHttp = require('chai-http');
+const expect = chai.expect;
+const redisClient = require('../redis-client');
 
-var expect = chai.expect;
+chai.use(chaiHttp);
 
-describe('API Tests', function() {
+const PROXY_URL = process.env.PROXY_URL || 'http://localhost:3000';
 
-  before((done) => {
-    request('http://localhost:3000')
-    done();
+describe('Redis Proxy', (done) => {
+
+  it('default route should show static page', (done) => {
+    chai.request(PROXY_URL)
+      .get('/')
+      .then((res) => {
+        expect(res.text).to.contain('Keith\'s Proxy Service');
+        expect(res).to.have.status(200);
+        done();
+      });
   });
 
+  it('request should fail when invalid api route entered', (done) => {
+    chai.request(PROXY_URL)
+      .get('/api/v1/my-key')
+      .then((res) => {
+        expect(res.text).to.contain('Cannot GET /api/v1/my-key');
+        expect(res).to.have.status(404);
+        done();
+      });
+  });
+
+  it('request should fail when key does not exist', (done) => {
+    chai.request(PROXY_URL)
+      .get('/api/v1/values/my-key')
+      .then((res) => {
+        expect(res.text).to.contain('Not Found');
+        expect(res).to.have.status(404);
+        done();
+      });
+  });
+
+  describe('with Redis', (done) => {
+    let testVal;
+
+    before(async (done) => {
+      testVal = {
+        'location': 'Vancouver'
+      };
+      redisClient.setAsync('test-key', JSON.stringify(testVal));
+      done();
+    });
+
+    it('request should return value in cache', (done) => {
+      chai.request(PROXY_URL)
+        .get('/api/v1/values/test-key')
+        .then((res) => {
+          expect(res.text).to.contain(JSON.stringify(testVal));
+          expect(res).to.have.status(200);
+          done();
+        }).catch((err) => {
+          done(err);
+        });
+    });
+  });
 });
-
-// curl -X POST http://localhost:3000/keith -H 'Content-Type: application/json' -d '{"location": "Vancouver"}'
-app.post("/:key", async (req, res) => {
-  const key = req.params['key'];
-  const value = JSON.stringify(req.body);
-
-  if (typeof value === 'undefined') {
-    res.sendStatus(HttpStatus.BAD_REQUEST);
-    return;
-  }
-
-  await redisClient.setAsync(key, value);
-  return res.send('Success');
-});
-*/

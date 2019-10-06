@@ -8,13 +8,14 @@ services:
 
   proxy:
     image: redis-proxy
+    container_name: proxy
     ports:
-      - ${PORT}:${PORT}
+      - 3000:3000
     links:
       - redis
     environment:
       - NODE_ENV=production
-      - REDIS_URL=${REDIS_URL}
-      - PORT=${PORT}
-      - CACHE_EXPIRY=${CACHE_EXPIRY}
-      - CACHE_CAPACITY=${CACHE_CAPACITY}
+      - REDIS_URL=redis://cache
+      - PROXY_PORT=3000
+      - CACHE_EXPIRY=7200000
+      - CACHE_CAPACITY=10

@@ -2,8 +2,8 @@ const redis = require('redis');
 const {promisify} = require('util');
 const client = redis.createClient(process.env.REDIS_URL);
 
-client.on("error", (err) => {
-  console.error("Error " + err);
+client.on('error', (err) => {
+  console.error('Error: ' + err);
 });
 
 module.exports = {
