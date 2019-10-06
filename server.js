@@ -1,12 +1,10 @@
 // TODO linting
+// TODO separate cache code into service
 
 const express = require('express');
-const bodyParser = require('body-parser');
 const app = express();
 
 const redisClient = require('./redis-client');
-
-console.log(process.env)
 
 // create local cache with max capacity and max age params
 const LRU = require("lru-cache")
@@ -20,14 +18,8 @@ const HttpStatus = require('http-status-codes');
 
 const path = require("path");
 
-// configure express to use body-parser as middleware
-app.use(bodyParser.urlencoded({ extended: false }));
-
-// parse application/json
-app.use(bodyParser.json());
-
-// curl http://localhost:3000/keith
-app.get('/:key', async (req, res) => {
+// curl http://localhost:3000/api/v1/values/key-id
+app.get('/api/v1/values/:key', async (req, res) => {
   const { key } = req.params;
   console.log(key);
 
@@ -39,7 +31,7 @@ app.get('/:key', async (req, res) => {
   }
 
   // look for the specified key in backing redis
-  console.log('fetching from redis cache');``
+  console.log('fetching from redis cache');
   const redisVal = await redisClient.getAsync(key);
   if (redisVal == null) {
     res.sendStatus(HttpStatus.NOT_FOUND);
@@ -50,20 +42,6 @@ app.get('/:key', async (req, res) => {
   return res.json(JSON.parse(redisVal));
 });
 
-// curl -X POST http://localhost:3000/keith -H 'Content-Type: application/json' -d '{"location": "Vancouver"}'
-app.post("/:key", async (req, res) => {
-  const key = req.params['key'];
-  const value = JSON.stringify(req.body);
-
-  if (typeof value === 'undefined') {
-    res.sendStatus(HttpStatus.BAD_REQUEST);
-    return;
-  }
-
-  await redisClient.setAsync(key, value);
-  return res.send('Success');
-});
-
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname + '/index.html'));
 });
@@ -72,3 +50,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
+module.exports = app;

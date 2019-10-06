@@ -10,14 +10,12 @@
   "author": "Keith MacKinnon",
   "license": "ISC",
   "dependencies": {
-    "body-parser": "^1.19.0",
     "express": "^4.17.1",
     "http-status-codes": "^1.3.2",
     "lru-cache": "^5.1.1",
     "redis": "^2.8.0"
   },
   "devDependencies": {
-    "mocha": "^6.2.1",
-    "supertest": "^4.0.2"
+    "chai": "^4.2.0"
   }
 }
