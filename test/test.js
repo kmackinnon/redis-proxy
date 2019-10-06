@@ -3,13 +3,13 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const expect = chai.expect;
-const redisClient = require('../redis-client');
+const redisClient = require('../lib/redis-client');
 
 chai.use(chaiHttp);
 
 const PROXY_URL = process.env.PROXY_URL || 'http://localhost:3000';
 
-describe('Redis Proxy', (done) => {
+describe('Redis Proxy', () => {
 
   it('default route should show static page', (done) => {
     chai.request(PROXY_URL)
@@ -41,7 +41,7 @@ describe('Redis Proxy', (done) => {
       });
   });
 
-  describe('with Redis', (done) => {
+  describe('with Redis', () => {
     let testVal;
 
     before(async (done) => {

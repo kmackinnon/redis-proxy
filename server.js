@@ -1,30 +1,18 @@
-// TODO linting
-// TODO separate cache code into service
-
 const express = require('express');
 const app = express();
 const HttpStatus = require('http-status-codes');
 const path = require("path");
-const redisClient = require('./redis-client');
 
-// create local cache with max capacity and max age params
-const LRU = require("lru-cache")
-  options = {
-              max: parseInt(process.env.CACHE_CAPACITY),
-              maxAge: parseInt(process.env.CACHE_EXPIRY)
-            }
-  , localCache = new LRU(options);
+const redisClient = require('./lib/redis-client');
+const cache = require('./lib/cache');
 
-/**
- * curl http://localhost:3000/api/v1/values/key-id
- */
+// expects stored values to be objects
 app.get('/api/v1/values/:key', async (req, res) => {
   const { key } = req.params;
 
-  // check if local proxy contains value for requested key
-  const val = localCache.get(key);
+  // check if local cache contains value of requested key
+  const val = cache.get(key);
   if (typeof val !== 'undefined') {
-    console.log('Local cache');
     return res.json(JSON.parse(val));
   }
 
@@ -35,7 +23,7 @@ app.get('/api/v1/values/:key', async (req, res) => {
     return;
   }
 
-  localCache.set(key, redisVal);
+  cache.set(key, redisVal);
   return res.json(JSON.parse(redisVal));
 });
 
