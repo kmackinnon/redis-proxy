@@ -17,5 +17,5 @@ services:
       - NODE_ENV=production
       - REDIS_URL=redis://cache
       - PROXY_PORT=3000
-      - CACHE_EXPIRY=2000 # 2s for testing
+      - CACHE_EXPIRY=1000 # 1s for testing
       - CACHE_CAPACITY=2 # 2 keys for testing

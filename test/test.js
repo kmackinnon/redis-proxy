@@ -5,9 +5,9 @@ const chaiHttp = require('chai-http');
 const expect = chai.expect;
 chai.use(chaiHttp);
 
+const sleep = require('util').promisify(setTimeout)
 const HttpStatus = require('http-status-codes');
 const redisClient = require('../lib/redis-client');
-
 const PROXY_URL = process.env.PROXY_URL || 'http://localhost:3000';
 
 describe('Redis Proxy', () => {
@@ -37,12 +37,6 @@ describe('Redis Proxy', () => {
     let secondTestVal = JSON.stringify({ 'SF': 'CA' });
     let thirdTestVal = JSON.stringify({ 'NYC': 'NY' });
 
-    // insert two k-v pairs into redis
-    before(async () => {
-      addKVToRedis('first-key', firstTestVal);
-      addKVToRedis('second-key', secondTestVal);
-    });
-
     async function addKVToRedis(key, val) {
       redisClient.setAsync(key, val);
     }
@@ -60,6 +54,11 @@ describe('Redis Proxy', () => {
         expect.fail(err);
       }
     }
+
+    before(async () => {
+      addKVToRedis('first-key', firstTestVal);
+      addKVToRedis('second-key', secondTestVal);
+    });
 
     it('should fail when key does not exist', async () => {
       await proxyGET('my-key', 'Not Found', undefined, HttpStatus.NOT_FOUND);
@@ -87,12 +86,11 @@ describe('Redis Proxy', () => {
       await proxyGET('first-key', firstTestVal, 'backing-redis');
     });
 
-    // note: cache expiry time set to 2s in docker-compose
+    // note: cache expiry time set to 1s in docker-compose
     it('should enforce cache expiry time', async () => {
-      setTimeout(async () => {
-        await proxyGET('second-key', secondTestVal, 'backing-redis');
-        await proxyGET('third-key', thirdTestVal, 'backing-redis');
-      }, 2000);
+      await sleep(1100);
+      await proxyGET('second-key', secondTestVal, 'backing-redis');
+      await proxyGET('third-key', thirdTestVal, 'backing-redis');
     });
 
   });
