@@ -3,9 +3,10 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const expect = chai.expect;
-const redisClient = require('../lib/redis-client');
-
 chai.use(chaiHttp);
+
+const HttpStatus = require('http-status-codes');
+const redisClient = require('../lib/redis-client');
 
 const PROXY_URL = process.env.PROXY_URL || 'http://localhost:3000';
 
@@ -16,7 +17,7 @@ describe('Redis Proxy', () => {
       .get('/')
       .then((res) => {
         expect(res.text).to.contain('Keith\'s Proxy Service');
-        expect(res).to.have.status(200);
+        expect(res).to.have.status(HttpStatus.OK);
         done();
       });
   });
@@ -26,57 +27,73 @@ describe('Redis Proxy', () => {
       .get('/api/v1/my-key')
       .then((res) => {
         expect(res.text).to.contain('Cannot GET /api/v1/my-key');
-        expect(res).to.have.status(404);
+        expect(res).to.have.status(HttpStatus.NOT_FOUND);
         done();
       });
   });
 
   describe('with Redis', () => {
-    let testVal;
-    before(async (done) => {
-      testVal = {
-        'location': 'Vancouver'
-      };
-      redisClient.setAsync('test-key', JSON.stringify(testVal));
-      done();
+    let firstTestVal = JSON.stringify({ 'Vancouver': 'BC' });
+    let secondTestVal = JSON.stringify({ 'SF': 'CA' });
+    let thirdTestVal = JSON.stringify({ 'NYC': 'NY' });
+
+    // insert two k-v pairs into redis
+    before(async () => {
+      addKVToRedis('first-key', firstTestVal);
+      addKVToRedis('second-key', secondTestVal);
     });
 
-    function verifyContentSource(source, cb) {
-      chai.request(PROXY_URL)
-        .get('/api/v1/values/test-key')
-        .then((res) => {
-          expect(res.text).to.contain(JSON.stringify(testVal));
-          expect(res).to.have.header('Content-Source', source);
-          expect(res).to.have.status(200);
-          cb();
-        }).catch((err) => {
-          cb(err);
-        });
+    async function addKVToRedis(key, val) {
+      redisClient.setAsync(key, val);
     }
 
-    it('should fail when key does not exist', (done) => {
-      chai.request(PROXY_URL)
-        .get('/api/v1/values/my-key')
-        .then((res) => {
-          expect(res.text).to.contain('Not Found');
-          expect(res).to.have.status(404);
-          done();
-        });
+    async function proxyGET(key, expectedVal, expectedSource, expectedStatus=HttpStatus.OK) {
+      try {
+        await chai.request(PROXY_URL)
+          .get(`/api/v1/values/${key}`)
+          .then((res) => {
+            expect(res.text).to.contain(expectedVal);
+            expect(res).to.have.header('Content-Source', expectedSource);
+            expect(res).to.have.status(expectedStatus);
+          });
+      } catch (err) {
+        expect.fail(err);
+      }
+    }
+
+    it('should fail when key does not exist', async () => {
+      await proxyGET('my-key', 'Not Found', undefined, HttpStatus.NOT_FOUND);
     });
 
-    it('should return value from backing redis', (done) => {
-      verifyContentSource('backing-redis', done);
+    it('should return value from backing redis first request', async () => {
+      await proxyGET('first-key', firstTestVal, 'backing-redis');
     });
 
-    it('should return value from local cache on subsequent call', (done) => {
-      verifyContentSource('local-cache', done);
+    it('should return value from local cache on subsequent call', async () => {
+      await proxyGET('first-key', firstTestVal, 'local-cache');
     });
 
-    // TODO max keys locally
+    // note: cache capacity set to 2 in docker-compose
+    it('should remove LRU and enforce max limit of keys in cache', async () => {
+      await proxyGET('second-key', secondTestVal, 'backing-redis');
+      await proxyGET('second-key', secondTestVal, 'local-cache');
 
-    // TODO LRU eviction
+      await addKVToRedis('third-key', thirdTestVal);
 
-    // TODO cache expiry
+      await proxyGET('third-key', thirdTestVal, 'backing-redis');
+      await proxyGET('third-key', thirdTestVal, 'local-cache');
+
+      // first key should have been evicted
+      await proxyGET('first-key', firstTestVal, 'backing-redis');
+    });
+
+    // note: cache expiry time set to 2s in docker-compose
+    it('should enforce cache expiry time', async () => {
+      setTimeout(async () => {
+        await proxyGET('second-key', secondTestVal, 'backing-redis');
+        await proxyGET('third-key', thirdTestVal, 'backing-redis');
+      }, 2000);
+    });
 
   });
 });
