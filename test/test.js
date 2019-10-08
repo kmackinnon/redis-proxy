@@ -8,6 +8,7 @@ chai.use(chaiHttp);
 const sleep = require('util').promisify(setTimeout)
 const HttpStatus = require('http-status-codes');
 const redisClient = require('../lib/redis-client');
+
 const PROXY_URL = process.env.PROXY_URL || 'http://localhost:3000';
 
 describe('Redis Proxy', () => {
@@ -19,6 +20,8 @@ describe('Redis Proxy', () => {
         expect(res.text).to.contain('Keith\'s Proxy Service');
         expect(res).to.have.status(HttpStatus.OK);
         done();
+      }).catch((err) => {
+        done(err);
       });
   });
 
@@ -29,6 +32,8 @@ describe('Redis Proxy', () => {
         expect(res.text).to.contain('Cannot GET /api/v1/my-key');
         expect(res).to.have.status(HttpStatus.NOT_FOUND);
         done();
+      }).catch((err) => {
+        done(err);
       });
   });
 
