@@ -3,7 +3,7 @@
 const express = require('express');
 const app = express();
 const HttpStatus = require('http-status-codes');
-const path = require("path");
+const path = require('path');
 
 const redisClient = require('./lib/redis-client');
 const cache = require('./lib/cache');
