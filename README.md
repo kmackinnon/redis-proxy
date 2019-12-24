@@ -67,15 +67,3 @@ The web server is built with [Express](https://expressjs.com/) and contains two 
 │   └── test.js // automated tests with mocha
 └── test.Dockerfile // builds the redis-proxy-tests image
 ```
-
-## Time Spent
-
-- Requirements and tech selection: 1 hour
-- Initial setup: 2 hours
-- Refactoring and defining API: 2 hours
-- Automated tests: 4 hours (slow due to relearning Docker networking)
-- README and final touches: 2 hours
-
-## Unimplemented Reqs
-
-I believe all of the main requirements are here, but I didn't find time to get to the bonus ones.
